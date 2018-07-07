@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -18,13 +19,8 @@ import com.google.zxing.Result;
 import com.zhihu.matisse.Matisse;
 import com.zhihu.matisse.MimeType;
 
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.Observer;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
+import java.lang.ref.WeakReference;
+
 import me.dm7.barcodescanner.core.IViewFinder;
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
@@ -39,7 +35,7 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
     private ImageView mIvBack;
     private ImageView mIvOpenLight;
     private ImageView mIvToAlbum;
-    private Disposable mDisposable;
+    //private Disposable mDisposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +97,7 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
 
     @Override
     public void handleResult(Result result) {
-        handlerResult(result.getText());
+        handleResult(result.getText());
 
     }
 
@@ -130,7 +126,7 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
         }
     }
 
-    private void handlerResult(String result) {
+    private void handleResult(String result) {
         final Intent intent = new Intent();
         intent.putExtra("result", result);
         setResult(Activity.RESULT_OK, intent);
@@ -140,42 +136,43 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
 
 
     private void encodeImage(final String path) {
-        Observable.create(new ObservableOnSubscribe<String>() {
-            @Override
-            public void subscribe(ObservableEmitter<String> emitter) throws Exception {
-                if (!TextUtils.isEmpty(path)) {
-                    final String code = QRCodeUtils.getStringFromQRCode(BitmapFactory.decodeFile(path));
-                    emitter.onNext(code);
-                } else {
-                    emitter.onError(new Throwable("无效图片地址"));
-                }
 
-                emitter.onComplete();
-            }
-        })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<String>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-                        mDisposable = d;
-                    }
-
-                    @Override
-                    public void onNext(String s) {
-                        handlerResult(s);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Toast.makeText(ScannerActivity.this, "没有识别到二维码", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onComplete() {
-
-                    }
-                });
+//        Observable.create(new ObservableOnSubscribe<String>() {
+//            @Override
+//            public void subscribe(ObservableEmitter<String> emitter) throws Exception {
+//                if (!TextUtils.isEmpty(path)) {
+//                    final String code = QRCodeUtils.getStringFromQRCode(BitmapFactory.decodeFile(path));
+//                    emitter.onNext(code);
+//                } else {
+//                    emitter.onError(new Throwable("无效图片地址"));
+//                }
+//
+//                emitter.onComplete();
+//            }
+//        })
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe(new Observer<String>() {
+//                    @Override
+//                    public void onSubscribe(Disposable d) {
+//                        mDisposable = d;
+//                    }
+//
+//                    @Override
+//                    public void onNext(String s) {
+//                        handleResult(s);
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                        Toast.makeText(ScannerActivity.this, "没有识别到二维码", Toast.LENGTH_SHORT).show();
+//                    }
+//
+//                    @Override
+//                    public void onComplete() {
+//
+//                    }
+//                });
 
     }
 
@@ -183,15 +180,49 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == -1 && requestCode == 1) {
-            encodeImage(Matisse.obtainPathResult(data).get(0));
+            new DeCodeImageAsyncTask(new WeakReference<ScannerActivity>(this)).execute(Matisse.obtainPathResult(data).get(0));
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mDisposable != null) {
-            mDisposable.dispose();
+//        if (mDisposable != null) {
+//            mDisposable.dispose();
+//        }
+    }
+
+    private static class DeCodeImageAsyncTask extends AsyncTask<String, Void, String> {
+
+
+        private WeakReference<ScannerActivity> mActivityWeakReference;
+
+        DeCodeImageAsyncTask(WeakReference<ScannerActivity> weakReference) {
+            mActivityWeakReference = weakReference;
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            String path = strings[0];
+            if (!TextUtils.isEmpty(path)) {
+                return QRCodeUtils.getStringFromQRCode(BitmapFactory.decodeFile(path));
+            } else {
+                return null;
+            }
+
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            final ScannerActivity activity = mActivityWeakReference.get();
+            if (activity != null) {
+                if (TextUtils.isEmpty(s)) {
+                    Toast.makeText(activity.getApplicationContext(), "没有识别到二维码", Toast.LENGTH_SHORT).show();
+                } else {
+                    activity.handleResult(s);
+                }
+            }
+
         }
     }
 }

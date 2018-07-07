@@ -45,4 +45,5 @@ dependencies {
     //implementation(name:'qrcode', ext:'aar')
     // implementation 'com.miaomiao:scanner:1.0'
     implementation project(':qrcode')
+    //implementation 'com.miaomiao:scanner:1.0.0'
 }

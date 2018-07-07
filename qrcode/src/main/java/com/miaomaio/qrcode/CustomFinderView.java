@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 
 import me.dm7.barcodescanner.core.ViewFinderView;
 
@@ -26,6 +27,7 @@ public class CustomFinderView extends ViewFinderView {
     private Paint mSquarePaint;
     private Paint mLinePaint;
     private Rect mLineRect;
+    private int mChangeScope;
 
     public CustomFinderView(Context context) {
         super(context);
@@ -33,15 +35,16 @@ public class CustomFinderView extends ViewFinderView {
     }
 
     private void init() {
+        mChangeScope = (int) dpToPx(5);
         setSquareViewFinder(true);
         setBorderColor(Color.parseColor("#D9AD65"));
-        setBorderLineLength(50);
-        setBorderStrokeWidth(10);
+        setBorderLineLength((int) dpToPx(10));
+        setBorderStrokeWidth((int) dpToPx(2));
 
         mSquarePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mSquarePaint.setColor(Color.parseColor("#D9AD65"));
         mSquarePaint.setStyle(Paint.Style.STROKE);
-        mSquarePaint.setStrokeWidth(2);
+        mSquarePaint.setStrokeWidth(dpToPx(0.5f));
 
         mLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mLinePaint.setColor(Color.parseColor("#D9AD65"));
@@ -56,7 +59,7 @@ public class CustomFinderView extends ViewFinderView {
         mLineRect.left = getFramingRect().left;
         mLineRect.right = getFramingRect().right;
         mLineRect.top = getFramingRect().top;
-        mLineRect.bottom = mLineRect.top + 100;
+        mLineRect.bottom = (int) (mLineRect.top + dpToPx(50));
     }
 
     public CustomFinderView(Context context, AttributeSet attributeSet) {
@@ -78,7 +81,7 @@ public class CustomFinderView extends ViewFinderView {
 
 
         //范围控制
-        if (mLineRect.top >= getFramingRect().bottom - 100) {
+        if (mLineRect.top >= getFramingRect().bottom - dpToPx(50)) {
 //            mLineRect.top = getFramingRect().top;
 //            mLineRect.bottom = mLineRect.top + 100;
             isInversion = true;
@@ -89,11 +92,11 @@ public class CustomFinderView extends ViewFinderView {
         }
 
         if (isInversion) {
-            mLineRect.top -= 10;
-            mLineRect.bottom -= 10;
+            mLineRect.top -= mChangeScope;
+            mLineRect.bottom -= mChangeScope;
         } else {
-            mLineRect.top += 10;
-            mLineRect.bottom += 10;
+            mLineRect.top += mChangeScope;
+            mLineRect.bottom += mChangeScope;
         }
 
 
@@ -113,5 +116,9 @@ public class CustomFinderView extends ViewFinderView {
 
     private void drawSquare(Canvas canvas) {
         canvas.drawRect(getFramingRect(), mSquarePaint);
+    }
+
+    private float dpToPx(float dp){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,dp,getResources().getDisplayMetrics());
     }
 }
