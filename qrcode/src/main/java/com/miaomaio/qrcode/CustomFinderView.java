@@ -25,7 +25,18 @@ public class CustomFinderView extends ViewFinderView {
      * 画外边框
      */
     private Paint mSquarePaint;
+    /**
+     * 划线
+     */
     private Paint mLinePaint;
+    /**
+     * 画上文字
+     */
+    private Paint mTitlePaint;
+    /**
+     * 画下文子
+     */
+    private Paint mDesPaint;
     private Rect mLineRect;
     private int mChangeScope;
 
@@ -38,8 +49,8 @@ public class CustomFinderView extends ViewFinderView {
         mChangeScope = (int) dpToPx(5);
         setSquareViewFinder(true);
         setBorderColor(Color.parseColor("#D9AD65"));
-        setBorderLineLength((int) dpToPx(10));
-        setBorderStrokeWidth((int) dpToPx(2));
+        setBorderLineLength((int) dpToPx(15));
+        setBorderStrokeWidth((int) dpToPx(3));
 
         mSquarePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mSquarePaint.setColor(Color.parseColor("#D9AD65"));
@@ -48,6 +59,14 @@ public class CustomFinderView extends ViewFinderView {
 
         mLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mLinePaint.setColor(Color.parseColor("#D9AD65"));
+
+        mTitlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mTitlePaint.setColor(Color.WHITE);
+        mTitlePaint.setTextSize(spToPx(20));
+
+        mDesPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mDesPaint.setColor(Color.WHITE);
+        mDesPaint.setTextSize(spToPx(12));
 
 
     }
@@ -71,6 +90,17 @@ public class CustomFinderView extends ViewFinderView {
         super.onDraw(canvas);
         drawSquare(canvas);
         drawLine(canvas);
+        drawText(canvas);
+    }
+
+    private final String TITLE = "扫描二维码";
+    private final String DES = "将二维码置于框内即自动扫描";
+    private void drawText(Canvas canvas) {
+        float measureTitle = mTitlePaint.measureText(TITLE);
+        canvas.drawText(TITLE,(getWidth()-measureTitle)/2,getFramingRect().top-dpToPx(30),mTitlePaint);
+
+        float measureDes = mDesPaint.measureText(DES);
+        canvas.drawText(DES,(getWidth()-measureDes)/2,getFramingRect().bottom+dpToPx(20),mDesPaint);
     }
 
     boolean isInversion = false;
@@ -120,5 +150,9 @@ public class CustomFinderView extends ViewFinderView {
 
     private float dpToPx(float dp){
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,dp,getResources().getDisplayMetrics());
+    }
+
+    private float spToPx(float dp){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,dp,getResources().getDisplayMetrics());
     }
 }
