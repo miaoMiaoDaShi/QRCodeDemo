@@ -68,7 +68,7 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
                 return mCustomFinderView;
             }
         };
-        mZXingScannerView.setAspectTolerance(0.5f);
+        //mZXingScannerView.setAspectTolerance(0.1f);
         mZXingScannerView.setAutoFocus(true);
         final FrameLayout finderContent = (FrameLayout) findViewById(R.id.mFinderContent);
         finderContent.addView(mZXingScannerView);
