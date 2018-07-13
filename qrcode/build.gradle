@@ -6,7 +6,7 @@ publish {
     groupId = 'com.miaomiao'         //compile引用时的第1部分groupId
     artifactId = 'scanner'     //compile引用时的第2部分项目名
     repoName = 'scanner'
-    publishVersion = '1.0.3'    //compile引用时的第3部分版本号
+    publishVersion = '1.0.4'    //compile引用时的第3部分版本号
     desc = 'qrcode'
     website = 'https://github.com/miaoMiaoDaShi/QRCodeDemo'
 

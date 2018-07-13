@@ -1,13 +1,19 @@
 package com.miaomaio.qrcode;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
@@ -35,6 +41,8 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
     private ImageView mIvBack;
     private ImageView mIvOpenLight;
     private ImageView mIvToAlbum;
+    public static final int REQUEST_CODE_PERMISSION_CAMERA = 0x10;
+    public static final int REQUEST_CODE_PERMISSION_CAMERA_WRITE_EXTERNAL_STORAGE = 0x11;
     //private Disposable mDisposable;
 
     @Override
@@ -46,11 +54,23 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
     }
 
     private void initView() {
-        setupScannerView();
         mIvBack = (ImageView) findViewById(R.id.mIvBack);
         mIvOpenLight = (ImageView) findViewById(R.id.mIvOpenLight);
         mIvToAlbum = (ImageView) findViewById(R.id.mIvToAlbum);
 
+        setupScannerView();
+
+
+    }
+
+    public boolean checkPermission(String permission, int requestCode) {
+
+        if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, permission)) {
+            return true;
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
+            return false;
+        }
 
     }
 
@@ -77,20 +97,32 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
     @Override
     protected void onResume() {
         super.onResume();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!checkPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA)) {
+                return;
+            }
+        }
+
         mZXingScannerView.setResultHandler(this);
         mZXingScannerView.startCamera();
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                mHandler.postDelayed(this, 20);
+                mHandler.postDelayed(this, 35);
                 mCustomFinderView.postInvalidate();
             }
         });
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!checkPermission(Manifest.permission.CAMERA, REQUEST_CODE_PERMISSION_CAMERA)) {
+                return;
+            }
+        }
         mHandler.removeCallbacksAndMessages(this);
         mZXingScannerView.stopCamera();
     }
@@ -113,15 +145,14 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
                     R.drawable.ic_turn_off_the_light : R.drawable.ic_turn_on_the_light);
 
         } else if (i == R.id.mIvToAlbum) {
-            Matisse.from(this)
-                    .choose(MimeType.of(MimeType.JPEG, MimeType.PNG))
-                    .countable(true)
-                    .maxSelectable(1)
-                    .gridExpectedSize(500)
-                    .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-                    .thumbnailScale(0.85f)
-                    .imageEngine(new GlideEngine())
-                    .forResult(1);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_CODE_PERMISSION_CAMERA_WRITE_EXTERNAL_STORAGE)) {
+                    return;
+                }
+            }
+
+            toSelectQrCodemage();
+
 
         }
     }
@@ -131,7 +162,7 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
         intent.putExtra("result", result);
         setResult(Activity.RESULT_OK, intent);
         finish();
-        Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+        //Toast.makeText(this, result, Toast.LENGTH_LONG).show();
     }
 
 
@@ -182,6 +213,39 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
         if (resultCode == -1 && requestCode == 1) {
             new DeCodeImageAsyncTask(new WeakReference<ScannerActivity>(this)).execute(Matisse.obtainPathResult(data).get(0));
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        //相机权限
+
+        if (requestCode == REQUEST_CODE_PERMISSION_CAMERA) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            } else {
+                finish();
+                Toast.makeText(this, "请同意相机权限", Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == REQUEST_CODE_PERMISSION_CAMERA_WRITE_EXTERNAL_STORAGE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                toSelectQrCodemage();
+            } else {
+                Toast.makeText(this, "请同意存储读取权限", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void toSelectQrCodemage() {
+        Matisse.from(this)
+                .choose(MimeType.of(MimeType.JPEG, MimeType.PNG))
+                .countable(true)
+                .maxSelectable(1)
+                .gridExpectedSize(500)
+                .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+                .thumbnailScale(0.85f)
+                .imageEngine(new GlideEngine())
+                .forResult(1);
     }
 
     @Override
